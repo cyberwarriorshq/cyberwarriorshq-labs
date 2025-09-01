@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  kibana:
+    image: docker.io/kibana:8.10.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    volumes:
+      - ./data/kibana:/var/lib/kibana
+    command: >
+      kibana --elasticsearch.hosts=http://elasticsearch:9200
+
+  elasticsearch:
+    image: docker.io/elasticsearch:8.10.0
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - ./data/elasticsearch:/var/lib/elasticsearch
+    environment:
+      - ELASTIC_PASSWORD=secret
+      - discovery.type: single-node
+
+  suricata:
+    image: docker.io/suricata:5.0.0
+    container_name: suricata
+    ports:
+      - "22:22"  # for testing
+    volumes:
+      - ./data/suricata:/etc/suricata
+    command: >
+      /usr/bin/suricata -c /etc/suricata/suricata.yml
+
+  zeek:
+    image: docker.io/zeek:3.0.0
+    container_name: zeek
+    ports:
+      - "22:22"  # for testing
+    volumes:
+      - ./data/zeek:/etc/zeek
+    command: >
+      /usr/bin/zeek -c /etc/zeek/zeek.conf
+
+  # (Optional) Mock DNS for testing
+  dns:
+    image: docker.io/dns:1.0
+    container_name: dns
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    command: >
+      /usr/bin/dnsd -p 53 -f /etc/dns/dns.conf
