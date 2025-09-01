@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  capstone:
+    image: cycurer-solutions/capstone:latest  # Your org's image name
+    container_name: capstone-lab  # Professional name (no typos)
+    volumes:
+      - /path/to/student/reports:/reports  # Student reports live here (no leaks!)
+    command: ["sh", "-c", "sleep 3600"]  # Runs forever (no logs)
+    ports:
+      - "5601:5601"  # Kibana
+      - "9200:9200"  # Elasticsearch
+      - "8080:8080"  # Volatility (mock)
+    environment:
+      - REPORT_DIR=/reports
+    healthcheck:
+      test: ["cat", "/reports/health.txt"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    restart: unless-stopped
