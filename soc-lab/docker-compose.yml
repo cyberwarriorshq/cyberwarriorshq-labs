@@ -1,34 +1,35 @@
 version: '3.8'
 
 services:
-  wazuh:  # 👈 THIS IS THE MANAGER SERVICE (YOU FIX THIS FIRST)
-    image: wazuh/wazuh:4.12.0  # ✅ CORRECT TAG (with colon!)
+  wazuh:  # 👈 Wazuh manager (now on correct network)
+    image: wazuh/wazuh:4.12.0
     ports:
       - "192.168.50.1:55000:55000"  # Your existing port mapping (unchanged)
-    # ... rest of your manager config (unchanged)
     volumes:
       - ./wazuh-data:/opt/wazuh/data
     command: ["-d", "--config", "/opt/wazuh/conf/wazuh-manager.conf"]
+    networks:
+      - soc-lab-net  # 👈 CRITICAL ADDITION (all services now share this network)
+
   wazuh-agent:
     image: wazuh/wazuh:4.12.0
     container_name: wazuh-agent
     volumes:
       - ./wazuh-agent-data:/opt/wazuh/agent
     command: ["-d", "--config", "/opt/wazuh/conf/wazuh-agent.conf"]
-    # NO DEPENDS_ON (Wazuh agent runs independently)
+    networks:
+      - soc-lab-net  # 👈 CRITICAL ADDITION (now on same network)
 
-  # Suricata (Network IDS) - Real-time traffic analysis
   suricata:
-    image: suricata/suricata:5.0.0
-    container_name: suricata
+    image: suricata/suricata:latest  # ✅ Fixed tag (as per your previous fix)
     ports:
-      - "8080:8080"  # Suricata UI
-      - "6206:6206"  # Suricata API
+      - "6206:6206"  # Suricata's default port (for lab testing)
+    networks:
+      - soc-lab-net  # 👈 Already had this (good)
     volumes:
       - ./suricata-data:/opt/suricata/data
     command: ["-c", "/opt/suricata/etc/suricata.yaml"]
 
-  # Zeek (Network Analysis) - Deep packet inspection
   zeek:
     image: zeek/zeek:4.0.0
     container_name: zeek
@@ -36,9 +37,10 @@ services:
       - "8081:8080"  # Zeek web UI (port 8080)
     volumes:
       - ./zeek-data:/opt/zeek/data
+    networks:
+      - soc-lab-net  # 👈 Now on correct network
     command: ["-c", "/opt/zeek/etc/zeek.conf"]
 
-  # OSSEC (Host-based IDS) - Endpoint monitoring
   ossec:
     image: ossec/ossec:3.0.0
     container_name: ossec
@@ -46,15 +48,18 @@ services:
       - "1514:1514"  # OSSEC agent port (for Wazuh integration)
     volumes:
       - ./ossec-data:/opt/ossec
+    networks:
+      - soc-lab-net  # 👈 Now on correct network
     command: ["-d", "--config", "/opt/ossec/etc/ossec.conf"]
 
-  # Nmap (Network scanning) - Recon tool
   nmap:
     image: nmap/nmap:7.9
     container_name: nmap
-    command: ["nmap", "-sV", "-sC", "127.0.0.1"]  # Basic scan (no UI)
+    networks:
+      - soc-lab-net  # 👈 CRITICAL ADDITION (now on correct network)
     volumes:
       - ./nmap-data:/opt/nmap
+    command: ["nmap", "-sV", "-sC", "127.0.0.1"]  # Basic scan (no UI)
 
 networks:
   soc-lab-net:
@@ -62,6 +67,5 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 192.168.50.0/24  # CHANGED FROM 192.168.100.0/24
-          gateway: 192.168.50.1    # CHANGED FROM 192.168.100.1
-
+        - subnet: 192.168.50.0/24  # Your target network (unchanged)
+          gateway: 192.168.50.1    # Your gateway (unchanged)
