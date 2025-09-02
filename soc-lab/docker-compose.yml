@@ -3,10 +3,9 @@ version: '3.8'
 
 services:
   wazuh-manager:
-    image: wazuh/wazuh-manager:4.12.0
     container_name: wazuh-manager
     ports:
-      - "55000:55000"  # EXACTLY your existing port (no changes)
+      - "55000:55000"
     networks:
       - soc-lab-net
     healthcheck:
@@ -63,18 +62,17 @@ services:
       - soc-lab-net
     command: ["ossec", "agent", "--server", "127.0.0.1:55000"]  # NO NETWORK EXPOSURE
 
-  nmap:
+    nmap:
     image: instrumentisto/nmap
     container_name: nmap
     networks:
       - soc-lab-net
-    command: ["nmap", "-sV", "127.0.0.1"]  # EXPLICITLY localhost scan (no network)
+    command: ["nmap", "-sV", "127.0.0.1"]
 
 networks:
   soc-lab-net:
     driver: bridge
     ipam:
       config:
-        - subnet: 192.168.50.0/24  # EXACTLY your network (192.168.50.0/24)
+        - subnet: 192.168.50.0/24
           gateway: 192.168.50.1
-    # This network is *only* for your SOC lab (no external access)
