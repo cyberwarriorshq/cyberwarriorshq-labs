@@ -41,7 +41,7 @@ services:
     command: ["-d", "--config", "/opt/wazuh/conf/agent.conf"]
 
   suricata:  # 👈 Updated to "jasonish/suricata:latest"
-    image: docker pull jasonish/suricata:latest
+    image: docker pull quay.io/jasonish/suricata:latest
     ports:
       - "6206:6206"  # Suricata default (for lab testing)
     networks:
