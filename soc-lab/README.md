@@ -3,7 +3,7 @@
 **Run in 3 clicks** (no typing, no CLI) → **100% safe** (no real data)
 
 ## 🚀 How to Start (1 click)
-1. **Open browser** → [cyberwarriorshq/soc-lab](https://github.com/cyberwarriorshq/soc-lab)
+1. **Open browser** → [cyberwarriorshq/cyberwarriorshq-labs/soc-lab](https://github.com/cyberwarriorshq/cyberwarriorshq-labs/soc-lab)
 2. **Click "Run Lab"** → **Docker auto-starts** (no CLI)
 3. **Click "See Dashboard"** → **instant SOC dashboard** (with mock events)
 
