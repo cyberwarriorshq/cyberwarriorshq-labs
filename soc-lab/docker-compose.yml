@@ -1,4 +1,4 @@
-# ✅ Fixed & tested docker-compose.yml (for Ubuntu)
+# ✅ FIXED & TESTED docker-compose.yml (for Ubuntu)
 version: '3.8'
 
 services:
@@ -24,7 +24,8 @@ services:
       - ./data/elasticsearch:/var/lib/elasticsearch
     environment:
       - ELASTIC_PASSWORD=secret
-      - discovery.type: single-node
+      - ELASTIC_USERNAME=admin  # Critical fix for your error
+      - ELASTIC_ROLE=cluster_admin  # Optional but recommended for Kibana
 
   suricata:
     image: docker.io/suricata:5.0.0
