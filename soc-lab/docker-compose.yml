@@ -1,58 +1,70 @@
-# ✅ FIXED & TESTED docker-compose.yml (for Ubuntu)
 version: '3.8'
 
 services:
-  kibana:
-    image: docker.io/kibana:8.10.0
-    container_name: kibana
+  # Wazuh (core SOC engine) - NO ELASTICSEARCH DEPENDENCIES
+  wazuh-manager:
+    image: wazuh/wazuh:4.10.0
+    container_name: wazuh-manager
     ports:
-      - "5601:5601"  # Kibana UI (safe port)
-    depends_on:
-      - elasticsearch
+      - "12000:12000"  # Wazuh API
+      - "55000:55000"   # Wazuh Web UI (SOC analyst's main interface)
     volumes:
-      - ./data/kibana:/var/lib/kibana
-    command: >
-      kibana --elasticsearch.hosts=http://elasticsearch:9200
+      - ./wazuh-data:/opt/wazuh/data
+    command: ["-d", "--config", "/opt/wazuh/conf/wazuh-manager.conf"]
 
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch:8.10.0  # ✅ CORRECT REGISTRY
-    container_name: elasticsearch
-    ports:
-      - "9200:9200"  # ES API
-      - "9300:9300"  # ES node (for internal)
+  wazuh-agent:
+    image: wazuh/wazuh:4.10.0
+    container_name: wazuh-agent
     volumes:
-      - ./data/elasticsearch:/var/lib/elasticsearch
-    environment:
-      - ELASTIC_PASSWORD=secret
-      - ELASTIC_USERNAME=admin  # Critical fix for your error
-      - ELASTIC_ROLE=cluster_admin  # Optional but recommended for Kibana
+      - ./wazuh-agent-data:/opt/wazuh/agent
+    command: ["-d", "--config", "/opt/wazuh/conf/wazuh-agent.conf"]
+    # NO DEPENDS_ON (Wazuh agent runs independently)
 
+  # Suricata (Network IDS) - Real-time traffic analysis
   suricata:
-    image: docker.io/suricata:5.0.0
+    image: suricata/suricata:5.0.0
     container_name: suricata
     ports:
-      - "6080:6080"  # Safe port for testing (no 22)
+      - "8080:8080"  # Suricata UI
+      - "6206:6206"  # Suricata API
     volumes:
-      - ./data/suricata:/etc/suricata
-    command: >
-      /usr/bin/suricata -c /etc/suricata/suricata.yml
+      - ./suricata-data:/opt/suricata/data
+    command: ["-c", "/opt/suricata/etc/suricata.yaml"]
 
+  # Zeek (Network Analysis) - Deep packet inspection
   zeek:
-    image: docker.io/zeek:3.0.0
+    image: zeek/zeek:4.0.0
     container_name: zeek
     ports:
-      - "10000:10000"  # Safe port (no 22)
+      - "8081:8080"  # Zeek web UI (port 8080)
     volumes:
-      - ./data/zeek:/etc/zeek
-    command: >
-      /usr/bin/zeek -c /etc/zeek/zeek.conf
+      - ./zeek-data:/opt/zeek/data
+    command: ["-c", "/opt/zeek/etc/zeek.conf"]
 
-  # (Optional) Mock DNS (for testing)
-  dns:
-    image: docker.io/dns:latest  # ✅ CORRECT FORMAT (public image)
-    container_name: dns
+  # OSSEC (Host-based IDS) - Endpoint monitoring
+  ossec:
+    image: ossec/ossec:3.0.0
+    container_name: ossec
     ports:
-      - "53:53/tcp"
-      - "53:53/udp"
-    command: >
-      /usr/bin/dnsd -p 53 -f /etc/dns/dns.conf
+      - "1514:1514"  # OSSEC agent port (for Wazuh integration)
+    volumes:
+      - ./ossec-data:/opt/ossec
+    command: ["-d", "--config", "/opt/ossec/etc/ossec.conf"]
+
+  # Nmap (Network scanning) - Recon tool
+  nmap:
+    image: nmap/nmap:7.9
+    container_name: nmap
+    command: ["nmap", "-sV", "-sC", "127.0.0.1"]  # Basic scan (no UI)
+    volumes:
+      - ./nmap-data:/opt/nmap
+
+networks:
+  soc-lab-net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.50.0/24  # CHANGED FROM 192.168.100.0/24
+          gateway: 192.168.50.1    # CHANGED FROM 192.168.100.1
+
