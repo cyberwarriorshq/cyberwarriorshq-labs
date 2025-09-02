@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   wazuh-manager:  # 👈 Wazuh manager (correct port for SOC)
-    image: docker pull wazuh/wazuh-manager:4.12.0
+    image: docker pull wazuh/wazuh-manager
     ports:
       - "192.168.50.1:55000:55000"  # Your existing port (critical for SOC)
     volumes:
@@ -12,7 +12,7 @@ services:
     command: ["-d", "--config", "/opt/wazuh/conf/wazuh-manager.conf"]
 
   wazuh-dashboard:  # 👈 Wazuh dashboard (new service)
-    image: dock pull wazuh/wazuh-dashboard:4.12.0
+    image: dock pull wazuh/wazuh-dashboard
     ports:
       - "192.168.50.1:55001:55001"  # Dedicated port for dashboard (no conflict)
     depends_on:
@@ -22,7 +22,7 @@ services:
     command: ["-d", "--config", "/opt/wazuh/conf/dashboard.conf"]
 
   wazuh-indexer:  # 👈 Wazuh indexer (new service)
-    image: docker pull wazuh/wazuh-indexer:4.12.0
+    image: docker pull wazuh/wazuh-indexer
     depends_on:
       - wazuh-manager
     volumes:
@@ -32,7 +32,7 @@ services:
     command: ["-d", "--config", "/opt/wazuh/conf/indexer.conf"]
 
   wazuh-agent:  # 👈 Wazuh agent (updated for SOC)
-    image: docker pull wazuh/wazuh-agent:4.12.0
+    image: docker pull wazuh/wazuh-agent
     container_name: wazuh-agent
     volumes:
       - ./wazuh-agent-data:/opt/wazuh/agent
