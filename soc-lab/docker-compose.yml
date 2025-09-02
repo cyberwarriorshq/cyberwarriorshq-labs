@@ -49,7 +49,7 @@ services:
 
   # (Optional) Mock DNS (for testing)
   dns:
-    image: docker.io/dns:1.0
+    image: docker.io/dns:latest  # ✅ CORRECT FORMAT (public image)
     container_name: dns
     ports:
       - "53:53/tcp"
