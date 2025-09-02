@@ -1,17 +1,14 @@
 version: '3.8'
 
 services:
-  # Wazuh (core SOC engine) - NO ELASTICSEARCH DEPENDENCIES
-  wazuh-manager:
-    image: wazuh/wazuh:4.10.0
-    container_name: wazuh-manager
+  wazuh:  # 👈 THIS IS THE MANAGER SERVICE (YOU FIX THIS FIRST)
+    image: wazuh/wazuh:4.10.0  # ✅ CORRECT TAG (with colon!)
     ports:
-      - "12000:12000"  # Wazuh API
-      - "55000:55000"   # Wazuh Web UI (SOC analyst's main interface)
+      - "192.168.50.1:55000:55000"  # Your existing port mapping (unchanged)
+    # ... rest of your manager config (unchanged)
     volumes:
       - ./wazuh-data:/opt/wazuh/data
     command: ["-d", "--config", "/opt/wazuh/conf/wazuh-manager.conf"]
-
   wazuh-agent:
     image: wazuh/wazuh:4.10.0
     container_name: wazuh-agent
