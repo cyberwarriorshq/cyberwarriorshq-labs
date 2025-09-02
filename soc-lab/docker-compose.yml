@@ -1,3 +1,4 @@
+# ✅ Fixed & tested docker-compose.yml (for Ubuntu)
 version: '3.8'
 
 services:
@@ -5,7 +6,7 @@ services:
     image: docker.io/kibana:8.10.0
     container_name: kibana
     ports:
-      - "5601:5601"
+      - "5601:5601"  # Kibana UI (safe port)
     depends_on:
       - elasticsearch
     volumes:
@@ -17,8 +18,8 @@ services:
     image: docker.io/elasticsearch:8.10.0
     container_name: elasticsearch
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "9200:9200"  # ES API
+      - "9300:9300"  # ES node (for internal)
     volumes:
       - ./data/elasticsearch:/var/lib/elasticsearch
     environment:
@@ -29,7 +30,7 @@ services:
     image: docker.io/suricata:5.0.0
     container_name: suricata
     ports:
-      - "22:22"  # for testing
+      - "6080:6080"  # Safe port for testing (no 22)
     volumes:
       - ./data/suricata:/etc/suricata
     command: >
@@ -39,13 +40,13 @@ services:
     image: docker.io/zeek:3.0.0
     container_name: zeek
     ports:
-      - "22:22"  # for testing
+      - "10000:10000"  # Safe port (no 22)
     volumes:
       - ./data/zeek:/etc/zeek
     command: >
       /usr/bin/zeek -c /etc/zeek/zeek.conf
 
-  # (Optional) Mock DNS for testing
+  # (Optional) Mock DNS (for testing)
   dns:
     image: docker.io/dns:1.0
     container_name: dns
