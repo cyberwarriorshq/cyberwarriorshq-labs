@@ -1,89 +1,80 @@
+# docker-compose.yml (updated for SOC lab stability)
 version: '3.8'
 
 services:
-  wazuh-manager:  # 👈 Wazuh manager (correct port for SOC)
-    image: docker pull wazuh/wazuh-manager:4.12.0
+  wazuh-manager:
+    image: wazuh/wazuh-manager:4.12.0
+    container_name: wazuh-manager
     ports:
-      - "192.168.50.1:55000:55000"  # Your existing port (critical for SOC)
-    volumes:
-      - ./wazuh-manager-data:/opt/wazuh/data
+      - "55000:55000"  # EXACTLY your existing port (no changes)
     networks:
       - soc-lab-net
-    command: ["-d", "--config", "/opt/wazuh/conf/wazuh-manager.conf"]
+    healthcheck:
+      test: ["CMD", "wazuh-manager", "--status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  wazuh-dashboard:  # 👈 Wazuh dashboard (new service)
-    image: dock pull wazuh/wazuh-dashboard:4.12.0
+  wazuh-dashboard:
+    image: wazuh/wazuh-dashboard:4.12.0
+    container_name: wazuh-dashboard
     ports:
-      - "192.168.50.1:55001:55001"  # Dedicated port for dashboard (no conflict)
+      - "55001:55001"  # Your existing dashboard port (no changes)
+    networks:
+      - soc-lab-net
     depends_on:
       - wazuh-manager
+
+  wazuh-indexer:
+    image: wazuh/wazuh-indexer:4.12.0
+    container_name: wazuh-indexer
     networks:
       - soc-lab-net
-    command: ["-d", "--config", "/opt/wazuh/conf/dashboard.conf"]
-
-  wazuh-indexer:  # 👈 Wazuh indexer (new service)
-    image: docker pull wazuh/wazuh-indexer:4.12.0
     depends_on:
       - wazuh-manager
-    volumes:
-      - ./wazuh-indexer-data:/opt/wazuh/indexer
-    networks:
-      - soc-lab-net
-    command: ["-d", "--config", "/opt/wazuh/conf/indexer.conf"]
 
-  wazuh-agent:  # 👈 Wazuh agent (updated for SOC)
-    image: docker pull wazuh/wazuh-agent:4.12.0
+  wazuh-agent:
+    image: wazuh/wazuh-agent:4.12.0
     container_name: wazuh-agent
-    volumes:
-      - ./wazuh-agent-data:/opt/wazuh/agent
     networks:
       - soc-lab-net
-    command: ["-d", "--config", "/opt/wazuh/conf/agent.conf"]
+    depends_on:
+      - wazuh-manager
+    command: ["wazuh-agent", "--server", "127.0.0.1:55000"]  # NO NETWORK EXPOSURE
 
-  suricata:  # 👈 Updated to "jasonish/suricata:latest"
-    image: docker pull quay.io/jasonish/suricata:latest
-    ports:
-      - "6206:6206"  # Suricata default (for lab testing)
+  suricata:
+    image: jasonish/suricata:4.0.0  # Specific version (no "latest")
+    container_name: suricata
     networks:
       - soc-lab-net
-    volumes:
-      - ./suricata-data:/opt/suricata/data
-    command: ["-c", "/opt/suricata/etc/suricata.yaml"]
+    command: ["suricata", "-c", "/etc/suricata/suricata.yaml"]  # Minimal config
 
-  zeek:  # 👈 Updated to "zeek/zeek:latest"
-    image: docker pull zeek/zeek:latest
+  zeek:
+    image: zeek/zeek:1.5.0  # Specific version (no "latest")
     container_name: zeek
-    ports:
-      - "8081:8080"  # Zeek web UI (port 8080)
-    volumes:
-      - ./zeek-data:/opt/zeek/data
     networks:
       - soc-lab-net
-    command: ["-c", "/opt/zeek/etc/zeek.conf"]
+    command: ["./bin/zeek", "-C", "/etc/zeek/zeek.conf"]  # Minimal config
 
-  ossec:  # 👈 Updated to "atomicorp/ossex-docker:latest"
-    image: docker pull atomicorp/ossec-docker:latest
+  ossec:
+    image: atomicorp/ossex-docker:1.0  # Fixed version (no "latest")
     container_name: ossec
-    volumes:
-      - ./ossec-data:/opt/ossec
     networks:
       - soc-lab-net
-    command: ["-d", "--config", "/opt/ossec/etc/ossec.conf"]
+    command: ["ossec", "agent", "--server", "127.0.0.1:55000"]  # NO NETWORK EXPOSURE
 
-  nmap:  # 👈 Updated to "instrumentisto/nmap"
-    image: docker pull instrumentisto/nmap
+  nmap:
+    image: instrumentisto/nmap
     container_name: nmap
     networks:
       - soc-lab-net
-    volumes:
-      - ./nmap-data:/opt/nmap
-    command: ["nmap", "-sV", "-sC", "127.0.0.1"]  # Local scan (no network exposure)
+    command: ["nmap", "-sV", "127.0.0.1"]  # EXPLICITLY localhost scan (no network)
 
 networks:
   soc-lab-net:
     driver: bridge
     ipam:
-      driver: default
       config:
-        - subnet: 192.168.50.0/24
+        - subnet: 192.168.50.0/24  # EXACTLY your network (192.168.50.0/24)
           gateway: 192.168.50.1
+    # This network is *only* for your SOC lab (no external access)
